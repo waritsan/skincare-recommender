@@ -25,7 +25,6 @@ User is {age} years old with {skin_type} skin, concerned about {concern}.
 Recommend 2 products suitable for them and explain why."""
 
         def stream_response():
-            yield '{"recommendation":"'
             for chunk in client.chat.completions.create(
                 model="gpt-35-turbo",
                 messages=[{"role": "user", "content": prompt}],
@@ -40,7 +39,6 @@ Recommend 2 products suitable for them and explain why."""
                 if content:
                     content = content.replace('\\', '\\\\').replace('"', '\\"')
                     yield content
-            yield '"}'
 
         return func.HttpResponse(
             ''.join(stream_response()),
