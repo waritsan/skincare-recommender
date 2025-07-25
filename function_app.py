@@ -26,7 +26,6 @@ Recommend 2 products suitable for them and explain why."""
 
         def stream_response():
             yield '{"recommendation":"'
-            first = True
             for chunk in client.chat.completions.create(
                 model="gpt-35-turbo",
                 messages=[{"role": "user", "content": prompt}],
@@ -34,15 +33,17 @@ Recommend 2 products suitable for them and explain why."""
                 max_tokens=300,
                 stream=True,
             ):
-                content = chunk.choices[0].delta.content if hasattr(chunk.choices[0], "delta") else chunk.choices[0].message.content
+                if not chunk.choices:
+                    continue
+                choice = chunk.choices[0]
+                content = getattr(getattr(choice, "delta", None), "content", None) or getattr(getattr(choice, "message", None), "content", None)
                 if content:
-                    # Escape double quotes and backslashes for JSON
                     content = content.replace('\\', '\\\\').replace('"', '\\"')
                     yield content
             yield '"}'
 
         return func.HttpResponse(
-            stream_response(),
+            ''.join(stream_response()),
             mimetype="application/json"
         )
 
