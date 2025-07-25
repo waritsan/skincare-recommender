@@ -24,15 +24,27 @@ def recommend(req: func.HttpRequest) -> func.HttpResponse:
 User is {age} years old with {skin_type} skin, concerned about {concern}.
 Recommend 2 products suitable for them and explain why."""
 
-        response = client.chat.completions.create(
-            model="gpt-35-turbo",  # ✅ Must match deployment name in Azure OpenAI
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=300,
-        )
+        def stream_response():
+            yield '{"recommendation":"'
+            first = True
+            for chunk in client.chat.completions.create(
+                model="gpt-35-turbo",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=300,
+                stream=True,
+            ):
+                content = chunk.choices[0].delta.content if hasattr(chunk.choices[0], "delta") else chunk.choices[0].message.content
+                if content:
+                    # Escape double quotes and backslashes for JSON
+                    content = content.replace('\\', '\\\\').replace('"', '\\"')
+                    yield content
+            yield '"}'
 
-        reply = response.choices[0].message.content
-        return func.HttpResponse(json.dumps({"recommendation": reply}), mimetype="application/json")
+        return func.HttpResponse(
+            stream_response(),
+            mimetype="application/json"
+        )
 
     except Exception as e:
         return func.HttpResponse(json.dumps({"error": str(e)}), mimetype="application/json", status_code=500)
