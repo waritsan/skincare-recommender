@@ -22,7 +22,7 @@ def recommend(req: func.HttpRequest) -> func.HttpResponse:
 
         prompt = f"""You are a Japanese skincare expert.
 User is {age} years old with {skin_type} skin, concerned about {concern}.
-Recommend 2 products suitable for them and explain why."""
+List only 2 recommended skincare products (by name) with a short explanation for each. Output nothing else."""
 
         def stream_response():
             for chunk in client.chat.completions.create(
